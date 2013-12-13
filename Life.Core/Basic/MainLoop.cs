@@ -15,6 +15,7 @@ namespace Life.Core.Basic
 
         private readonly GameEngine _engine;
         private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+        private readonly ManualResetEvent _pauseResetEvent = new ManualResetEvent(false);
 
         private double _delay;
         private bool _isPaused;
@@ -71,13 +72,13 @@ namespace Life.Core.Basic
 
         public void DecreaseSpeed()
         {
-            if (Delay*2 > MaxDelay) return;
+            if (Delay * 2 > MaxDelay) return;
             Delay *= 2;
         }
 
         public void IncreaseSpeed()
         {
-            if (Delay/2 < MinDelay) return;
+            if (Delay / 2 < MinDelay) return;
             Delay /= 2;
         }
 
@@ -89,12 +90,14 @@ namespace Life.Core.Basic
 
         public void Stop()
         {
+            _pauseResetEvent.Set();
             _stopping = true;
         }
 
         public void TogglePause()
         {
             IsPaused = !IsPaused;
+            if (!IsPaused) _pauseResetEvent.Set();
         }
 
         #endregion Public Methods
@@ -106,16 +109,17 @@ namespace Life.Core.Basic
             var previousTick = DateTime.Now;
             do
             {
+                _pauseResetEvent.Reset();
+                if (IsPaused) _pauseResetEvent.WaitOne();
+                if (_stopping) break;
+
                 var eventWasSet = false;
                 if (previousTick + TimeSpan.FromMilliseconds(Delay) > DateTime.Now)
                 {
                     _resetEvent.Reset();
-                    do
-                    {
-                        var sleepTime = (previousTick.AddMilliseconds(Delay) - DateTime.Now).TotalMilliseconds;
-                        sleepTime = Math.Max(sleepTime, 0);
-                        eventWasSet = _resetEvent.WaitOne((int) sleepTime);
-                    } while (IsPaused);
+                    var sleepTime = (previousTick.AddMilliseconds(Delay) - DateTime.Now).TotalMilliseconds;
+                    sleepTime = Math.Max(sleepTime, 0);
+                    eventWasSet = _resetEvent.WaitOne((int)sleepTime);
                 }
 
                 if (eventWasSet) continue;
