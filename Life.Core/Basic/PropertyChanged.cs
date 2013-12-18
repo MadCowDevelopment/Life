@@ -3,15 +3,15 @@ using System.Linq.Expressions;
 
 namespace Life.Core.Basic
 {
-    public class PropertyChanged<TSender, TValue>
+    public class PropertyChanged
     {
         #region Constructors
 
-        public PropertyChanged(TSender sender, Expression<Func<TValue>> func)
+        public PropertyChanged(object sender, Expression<Func<object>> func)
         {
             Sender = sender;
+            PropertyName = GetName(func);
             Value = func.Compile()();
-            PropertyName = GetMemberName(func.Body);
         }
 
         #endregion Constructors
@@ -23,12 +23,12 @@ namespace Life.Core.Basic
             get; private set;
         }
 
-        public TSender Sender
+        public object Sender
         {
             get; private set;
         }
 
-        public TValue Value
+        public object Value
         {
             get; private set;
         }
@@ -37,15 +37,16 @@ namespace Life.Core.Basic
 
         #region Public Methods
 
-        public string GetMemberName(Expression expression)
+        private static string GetName(Expression<Func<object>> exp)
         {
-            var memberExpression = expression as MemberExpression;
-            if (memberExpression != null)
+            var body = exp.Body as MemberExpression;
+            if (body == null)
             {
-                return memberExpression.Member.Name;
+                var ubody = (UnaryExpression)exp.Body;
+                body = ubody.Operand as MemberExpression;
             }
 
-            throw new InvalidOperationException();
+            return body.Member.Name;
         }
 
         #endregion Public Methods

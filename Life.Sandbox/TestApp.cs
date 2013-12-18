@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Caliburn.Micro;
 using Life.Core.Basic;
 using Life.Core.Caliburn.Micro;
@@ -8,7 +9,7 @@ namespace Life.Sandbox
     public class TestApp : 
         IHandle<GameTimeUpdated>, 
         IHandle<GamePaused>, 
-        IHandle<PropertyChanged<MainLoop, double>>
+        IHandle<PropertyChanged>
     {
         private MainLoop _mainLoop;
         private volatile object _consoleLock = new object();
@@ -20,7 +21,14 @@ namespace Life.Sandbox
 
         public void Run()
         {
-            var engine = new GameEngine();
+            var environment = new GameEnvironment();
+            
+            var entities = new List<IGameEntity>();
+            entities.Add(new Human(environment, new DateTime(1980, 1, 12)));
+
+            var engine = new GameEngine(environment);
+            engine.Initialize(entities);
+
             _mainLoop = new MainLoop(engine);
             _mainLoop.Start();
 
@@ -60,10 +68,14 @@ namespace Life.Sandbox
             WriteLine(0, 1, "Game paused: {0}", message.IsPaused);
         }
 
-        public void Handle(PropertyChanged<MainLoop, double> message)
+
+        public void Handle(PropertyChanged message)
         {
-            WriteLine(0, 2, "Delay: {0}", message.Value);
+            WriteLine(0, _currentCursor++, "{0} - {1}: {2}", message.Sender, message.PropertyName, message.Value);
         }
+
+        private int _currentCursor = 2;
+
 
         private void WriteLine(int x, int y, string format, params object[] args)
         {

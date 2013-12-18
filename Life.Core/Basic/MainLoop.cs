@@ -47,7 +47,7 @@ namespace Life.Core.Basic
             {
                 _delay = value;
                 _resetEvent.Set();
-                this.Publish(new PropertyChanged<MainLoop, double>(this, () => Delay));
+                this.Publish(new PropertyChanged(this, () => Delay));
             }
         }
 
